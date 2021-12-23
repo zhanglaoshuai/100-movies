@@ -1,0 +1,39 @@
+import requests
+from lxml import etree
+import csv
+##创建列表存储数据
+mov_list=[]
+
+##构造翻页url
+for i in range(10):
+    url="https://www.maoyan.com/board/4?offset="+str(i*10)##字符串用+直接拼接
+    
+    #发出请求
+    headers={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36 Edg/96.0.1054.62"}
+    
+    #获取响应
+    try:
+        response=requests.get(url,headers=headers)
+        response.encoding='utf-8'
+
+        #解析response
+        result = etree.HTML(response.text)
+    except RequestException:
+        print("获取错误")
+    #提取节点信息
+    for j in range(1,11):
+        rank=result.xpath("//dd[{}]/i/text()".format(j))[0]
+        name=result.xpath("//dd[{}]//p[@class='name']/a/text()".format(j))[0]
+        actor=result.xpath("//dd[{}]//p[@class='star']/text()".format(j))[0].strip()
+        releasetime=result.xpath("//dd[{}]//p[@class='releasetime']/text()".format(j))[0]
+        score_list=result.xpath("//dd[{}]//p[@class='score']/i/text()".format(j))
+        score=score_list[0]+score_list[1]
+        mov_list.append([rank,name,actor,releasetime,score])
+
+##存储数据
+with open('result.csv','w',newline="",encoding='utf-8') as f:##或者encoding='utf-8-sig'，newline=''保证存储数据不空行
+    columns_name = ['rank','name','actor','releasetime','score']
+    writer = csv.writer(f)##创建初始化写入对象
+    writer.writerow(columns_name)##一行一行的写入colums_name
+    for row in mov_list:
+        writer.writerow(row)
